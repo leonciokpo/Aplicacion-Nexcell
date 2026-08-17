@@ -1,6 +1,7 @@
 package modelo;
 
 import vista.VendedorUI;
+import controlador.VendedorController; // Importamos el nuevo controlador
 
 public class Vendedor extends Usuario {
 
@@ -10,7 +11,13 @@ public class Vendedor extends Usuario {
 
     @Override
     public void mostrarInterfaz() {
-        VendedorUI vendedorPanel = new VendedorUI();
-        vendedorPanel.setVisible(true);
+        // 1. Creamos la vista
+        VendedorUI vendedorVista = new VendedorUI();
+
+        // 2. Creamos el cerebro y le pasamos la vista
+        VendedorController controlador = new VendedorController(vendedorVista);
+
+        // 3. Recién ahora la hacemos visible
+        vendedorVista.setVisible(true);
     }
 }

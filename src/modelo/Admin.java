@@ -1,6 +1,7 @@
 package modelo;
 
 import vista.AdminUI;
+import controlador.AdminController; // Importamos el nuevo cerebro
 
 public class Admin extends Usuario {
 
@@ -10,7 +11,13 @@ public class Admin extends Usuario {
 
     @Override
     public void mostrarInterfaz() {
-        AdminUI adminPanel = new AdminUI();
-        adminPanel.setVisible(true);
+        // 1. Creamos la vista
+        AdminUI adminVista = new AdminUI();
+
+        // 2. Le enchufamos el controlador
+        AdminController controlador = new AdminController(adminVista);
+
+        // 3. Hacemos visible la ventana
+        adminVista.setVisible(true);
     }
 }
