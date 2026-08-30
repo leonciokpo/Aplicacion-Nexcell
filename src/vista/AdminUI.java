@@ -6,7 +6,14 @@ import java.awt.*;
 
 public class AdminUI extends JFrame {
 
-    // Componentes de Productos
+    // Componentes de Reportes
+    private JComboBox<String> comboReportes;
+    private JTextField buscarReporteField;
+    private JButton btnGenerarReporte;
+    private JButton btnLimpiarReporte;
+    private JTable tablaReportes;
+
+    // Componentes de Producto
     private JTextField buscarProductoField;
     private JButton btnBuscarProducto;
     private JTable tablaProductos;
@@ -31,6 +38,7 @@ public class AdminUI extends JFrame {
         JTabbedPane sistemaPestanas = new JTabbedPane();
         sistemaPestanas.addTab("Gestión de Productos", crearPanelProductos());
         sistemaPestanas.addTab("Gestión de Usuarios", crearPanelUsuarios());
+        sistemaPestanas.addTab("Reportes", crearPanelReportes());
 
         add(sistemaPestanas, BorderLayout.CENTER);
 
@@ -115,6 +123,37 @@ public class AdminUI extends JFrame {
         return panel;
     }
 
+    private JPanel crearPanelReportes() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JPanel filtros = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        comboReportes = new JComboBox<>(new String[]{
+                "Stock de productos",
+                "Productos registrados",
+                "Usuarios del sistema",
+                "Movimientos de stock"
+        });
+
+        buscarReporteField = new JTextField(15);
+        btnGenerarReporte = new JButton("Generar");
+        btnLimpiarReporte = new JButton("Limpiar");
+
+        filtros.add(new JLabel("Reporte:"));
+        filtros.add(comboReportes);
+        filtros.add(new JLabel("Buscar:"));
+        filtros.add(buscarReporteField);
+        filtros.add(btnGenerarReporte);
+        filtros.add(btnLimpiarReporte);
+
+        tablaReportes = new JTable();
+        panel.add(filtros, BorderLayout.NORTH);
+        panel.add(new JScrollPane(tablaReportes), BorderLayout.CENTER);
+
+        return panel;
+    }
+
     // --- GETTERS PRODUCTOS ---
     public JTextField getBuscarProductoField() { return buscarProductoField; }
     public JButton getBtnBuscarProducto() { return btnBuscarProducto; }
@@ -126,6 +165,13 @@ public class AdminUI extends JFrame {
     public JButton getBtnBuscarUsuario() { return btnBuscarUsuario; }
     public JTable getTablaUsuarios() { return tablaUsuarios; }
     public JButton getBtnAbrirFormularioUsuario() { return btnAbrirFormularioUsuario; }
+
+    // --- GETTERS REPORTES ---
+    public JComboBox<String> getComboReportes() {return comboReportes;}
+    public JTextField getBuscarReporteField() {return buscarReporteField;}
+    public JButton getBtnGenerarReporte() {return btnGenerarReporte;}
+    public JButton getBtnLimpiarReporte() {return btnLimpiarReporte;}
+    public JTable getTablaReportes() {return tablaReportes;}
 
     // --- GETTER CERRAR SESIÓN ---
     public JButton getBtnCerrarSesion() { return btnCerrarSesion; }

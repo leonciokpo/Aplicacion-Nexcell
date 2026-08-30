@@ -18,6 +18,10 @@ public class AdminController {
         this.vistaPrincipal.getBtnAbrirFormularioProducto().addActionListener(e -> abrirFormularioProducto());
         this.vistaPrincipal.getBtnAbrirFormularioUsuario().addActionListener(e -> abrirFormularioUsuario());
 
+        // Escuchamos los botones de la vista principal
+        vistaPrincipal.getBtnGenerarReporte().addActionListener(e -> generarReporte());
+        vistaPrincipal.getBtnLimpiarReporte().addActionListener(e -> limpiarReporte());
+
         // Escuchamos el botón de cerrar sesión
         this.vistaPrincipal.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
     }
@@ -77,6 +81,22 @@ public class AdminController {
             LoginUI ventanaLogin = new LoginUI();
             new LoginController(ventanaLogin);
             ventanaLogin.setVisible(true);
+        }
+
+        private void generarReporte() {
+
+            String reporte = vistaPrincipal.getComboReportes()
+                    .getSelectedItem().toString();
+
+            if (reporte.equals("Stock de productos")) {
+                reporteStock();
+            } else if (reporte.equals("Productos registrados")) {
+                reporteProductos();
+            } else if (reporte.equals("Usuarios del sistema")) {
+                reporteUsuarios();
+            } else {
+                reporteMovimientos();
+            }
         }
     }
 }
