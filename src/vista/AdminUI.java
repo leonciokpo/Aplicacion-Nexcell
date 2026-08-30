@@ -6,31 +6,34 @@ import java.awt.*;
 
 public class AdminUI extends JFrame {
 
-    // Componentes de Reportes
-    private JComboBox<String> comboReportes;
-    private JTextField buscarReporteField;
-    private JButton btnGenerarReporte;
-    private JButton btnLimpiarReporte;
-    private JTable tablaReportes;
-
-    // Componentes de Producto
+    // Componentes de Productos
     private JTextField buscarProductoField;
     private JButton btnBuscarProducto;
     private JTable tablaProductos;
     private JButton btnAbrirFormularioProducto;
+    private JButton btnModificarProducto;
+    private JButton btnBajaProducto;
+    private JButton btnAltaProducto;
 
     // Componentes de Usuarios
     private JTextField buscarUsuarioField;
     private JButton btnBuscarUsuario;
     private JTable tablaUsuarios;
     private JButton btnAbrirFormularioUsuario;
+    private JButton btnModificarUsuario;
+    private JButton btnBajaUsuario;
+    private JButton btnAltaUsuario;
 
-    // Botón general
+    // Reportes y General
+    private JComboBox<String> comboReportes;
+    private JButton btnGenerarReporte;
+    private JButton btnLimpiarReporte;
+    private JTable tablaReportes;
     private JButton btnCerrarSesion;
 
     public AdminUI() {
         setTitle("Panel de Administrador - Nexcell");
-        setSize(750, 530);
+        setSize(850, 600); // Agrandamos el ancho para que entren los botones
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -42,7 +45,6 @@ public class AdminUI extends JFrame {
 
         add(sistemaPestanas, BorderLayout.CENTER);
 
-        // Panel inferior para cerrar sesión
         JPanel panelInferior = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnCerrarSesion = new JButton("Cerrar Sesión");
         btnCerrarSesion.setForeground(Color.RED);
@@ -56,25 +58,33 @@ public class AdminUI extends JFrame {
 
         JPanel panelSuperior = new JPanel(new BorderLayout());
 
-        // Búsqueda
         JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         buscarProductoField = new JTextField(15);
         btnBuscarProducto = new JButton("Buscar");
-        panelBusqueda.add(new JLabel("Buscar (Modelo/Código): "));
+        panelBusqueda.add(new JLabel("Filtrar: "));
         panelBusqueda.add(buscarProductoField);
         panelBusqueda.add(btnBuscarProducto);
 
-        // Botón Nuevo
-        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        btnAbrirFormularioProducto = new JButton("Nuevo Producto");
+        // Agregamos los botones de ABM (Alta, Baja, Modificación)
+        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        btnAbrirFormularioProducto = new JButton("Nuevo");
+        btnModificarProducto = new JButton("Modificar");
+        btnBajaProducto = new JButton("Baja Lógica");
+        btnAltaProducto = new JButton("Reactivar");
+
         panelAcciones.add(btnAbrirFormularioProducto);
+        panelAcciones.add(btnModificarProducto);
+        panelAcciones.add(btnBajaProducto);
+        panelAcciones.add(btnAltaProducto);
 
         panelSuperior.add(panelBusqueda, BorderLayout.WEST);
         panelSuperior.add(panelAcciones, BorderLayout.EAST);
 
-        String[] columnas = {"Código", "Categoría", "Modelo", "Stock", "Precio"};
+        // Agregamos la columna "Estado" para visualizar la baja lógica
+        String[] columnas = {"ID", "Modelo", "Categoría", "Stock", "Precio", "Estado"};
         Object[][] datosEjemplo = {
-            {"CEL-001", "Celulares", "Motorola Edge 60 Pro", "15", "$850.000"}
+            {"CEL-001", "Motorola Edge 60 Pro", "Celulares", "15", "$850.000", "Activo"},
+            {"ACC-002", "Funda Silicona", "Accesorios", "30", "$15.000", "Inactivo"}
         };
 
         DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas);
@@ -96,21 +106,28 @@ public class AdminUI extends JFrame {
         JPanel panelBusqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         buscarUsuarioField = new JTextField(15);
         btnBuscarUsuario = new JButton("Buscar");
-        panelBusqueda.add(new JLabel("Buscar (Username): "));
+        panelBusqueda.add(new JLabel("Usuario: "));
         panelBusqueda.add(buscarUsuarioField);
         panelBusqueda.add(btnBuscarUsuario);
 
-        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        btnAbrirFormularioUsuario = new JButton("Nuevo Usuario");
+        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        btnAbrirFormularioUsuario = new JButton("Nuevo");
+        btnModificarUsuario = new JButton("Modificar");
+        btnBajaUsuario = new JButton("Baja Lógica");
+        btnAltaUsuario = new JButton("Reactivar");
+
         panelAcciones.add(btnAbrirFormularioUsuario);
+        panelAcciones.add(btnModificarUsuario);
+        panelAcciones.add(btnBajaUsuario);
+        panelAcciones.add(btnAltaUsuario);
 
         panelSuperior.add(panelBusqueda, BorderLayout.WEST);
         panelSuperior.add(panelAcciones, BorderLayout.EAST);
 
-        String[] columnas = {"Username", "Rol del Sistema"};
+        String[] columnas = {"Username", "Rol del Sistema", "Estado"};
         Object[][] datosEjemplo = {
-            {"vendedor", "Vendedor"},
-            {"gerente", "Gerente"}
+            {"vendedor1", "Vendedor", "Activo"},
+            {"gerente_suc", "Gerente", "Activo"}
         };
 
         DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas);
@@ -127,52 +144,44 @@ public class AdminUI extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel filtros = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        comboReportes = new JComboBox<>(new String[]{
-                "Stock de productos",
-                "Productos registrados",
-                "Usuarios del sistema",
-                "Movimientos de stock"
-        });
-
-        buscarReporteField = new JTextField(15);
+        JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        String[] opcionesReporte = {"Stock de productos", "Productos registrados", "Usuarios del sistema", "Movimientos"};
+        comboReportes = new JComboBox<>(opcionesReporte);
         btnGenerarReporte = new JButton("Generar");
         btnLimpiarReporte = new JButton("Limpiar");
 
-        filtros.add(new JLabel("Reporte:"));
-        filtros.add(comboReportes);
-        filtros.add(new JLabel("Buscar:"));
-        filtros.add(buscarReporteField);
-        filtros.add(btnGenerarReporte);
-        filtros.add(btnLimpiarReporte);
+        panelSuperior.add(new JLabel("Tipo de Reporte: "));
+        panelSuperior.add(comboReportes);
+        panelSuperior.add(btnGenerarReporte);
+        panelSuperior.add(btnLimpiarReporte);
 
-        tablaReportes = new JTable();
-        panel.add(filtros, BorderLayout.NORTH);
-        panel.add(new JScrollPane(tablaReportes), BorderLayout.CENTER);
+        tablaReportes = new JTable(new DefaultTableModel());
+        JScrollPane scrollTabla = new JScrollPane(tablaReportes);
+
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(scrollTabla, BorderLayout.CENTER);
 
         return panel;
     }
 
-    // --- GETTERS PRODUCTOS ---
-    public JTextField getBuscarProductoField() { return buscarProductoField; }
-    public JButton getBtnBuscarProducto() { return btnBuscarProducto; }
+    // --- GETTERS DE PRODUCTOS ---
     public JTable getTablaProductos() { return tablaProductos; }
     public JButton getBtnAbrirFormularioProducto() { return btnAbrirFormularioProducto; }
+    public JButton getBtnModificarProducto() { return btnModificarProducto; }
+    public JButton getBtnBajaProducto() { return btnBajaProducto; }
+    public JButton getBtnAltaProducto() { return btnAltaProducto; }
 
-    // --- GETTERS USUARIOS ---
-    public JTextField getBuscarUsuarioField() { return buscarUsuarioField; }
-    public JButton getBtnBuscarUsuario() { return btnBuscarUsuario; }
+    // --- GETTERS DE USUARIOS ---
     public JTable getTablaUsuarios() { return tablaUsuarios; }
     public JButton getBtnAbrirFormularioUsuario() { return btnAbrirFormularioUsuario; }
+    public JButton getBtnModificarUsuario() { return btnModificarUsuario; }
+    public JButton getBtnBajaUsuario() { return btnBajaUsuario; }
+    public JButton getBtnAltaUsuario() { return btnAltaUsuario; }
 
-    // --- GETTERS REPORTES ---
-    public JComboBox<String> getComboReportes() {return comboReportes;}
-    public JTextField getBuscarReporteField() {return buscarReporteField;}
-    public JButton getBtnGenerarReporte() {return btnGenerarReporte;}
-    public JButton getBtnLimpiarReporte() {return btnLimpiarReporte;}
-    public JTable getTablaReportes() {return tablaReportes;}
-
-    // --- GETTER CERRAR SESIÓN ---
+    // --- GETTERS REPORTES Y GENERAL ---
+    public JComboBox<String> getComboReportes() { return comboReportes; }
+    public JButton getBtnGenerarReporte() { return btnGenerarReporte; }
+    public JButton getBtnLimpiarReporte() { return btnLimpiarReporte; }
+    public JTable getTablaReportes() { return tablaReportes; }
     public JButton getBtnCerrarSesion() { return btnCerrarSesion; }
 }

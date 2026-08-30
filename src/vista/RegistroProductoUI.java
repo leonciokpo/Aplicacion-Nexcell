@@ -5,62 +5,113 @@ import java.awt.*;
 
 public class RegistroProductoUI extends JDialog {
 
-    private JTextField codigoField;
-    private JComboBox<String> categoriaBox;
-    private JTextField modeloField;
-    private JTextField stockField;
+    private JTextField idProductoField;
+    private JTextField nombreField;
+    private JTextArea descripcionArea;
     private JTextField precioField;
+    private JTextField descuentoField;
+    private JTextField stockField;
+
+    private JComboBox<String> categoriaBox;
+    private JComboBox<String> marcaBox;
+
+    // Componentes para la imagen
+    private JTextField rutaImagenField;
+    private JButton btnSeleccionarImagen;
+
     private JButton btnGuardarProducto;
 
     public RegistroProductoUI(JFrame parent) {
         super(parent, "Registrar Nuevo Producto", true);
-        setSize(400, 300);
+        setSize(450, 500); // Ajustamos la altura tras quitar la fila de los checkbox
         setLocationRelativeTo(parent);
         setResizable(false);
 
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 10, 8, 10);
+        gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Código
-        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Código / ID:"), gbc);
-        gbc.gridx = 1; codigoField = new JTextField(15); panel.add(codigoField, gbc);
+        // Fila 0: ID Producto
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("ID Producto:"), gbc);
+        gbc.gridx = 1; idProductoField = new JTextField(15); panel.add(idProductoField, gbc);
 
-        // Categoría (Desplegable)
-        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Categoría:"), gbc);
+        // Fila 1: Nombre
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Nombre:"), gbc);
+        gbc.gridx = 1; nombreField = new JTextField(15); panel.add(nombreField, gbc);
+
+        // Fila 2: Descripción
+        gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Descripción:"), gbc);
         gbc.gridx = 1;
-        String[] categorias = {"Celulares", "Accesorios", "Repuestos", "Otros"};
+        descripcionArea = new JTextArea(3, 15);
+        descripcionArea.setLineWrap(true);
+        descripcionArea.setWrapStyleWord(true);
+        JScrollPane scrollDesc = new JScrollPane(descripcionArea);
+        panel.add(scrollDesc, gbc);
+
+        // Fila 3: Precio y Descuento
+        gbc.gridx = 0; gbc.gridy = 3; panel.add(new JLabel("Precio / Desc. (%):"), gbc);
+        gbc.gridx = 1;
+        JPanel panelPrecios = new JPanel(new GridLayout(1, 2, 5, 0));
+        precioField = new JTextField();
+        descuentoField = new JTextField("0");
+        panelPrecios.add(precioField);
+        panelPrecios.add(descuentoField);
+        panel.add(panelPrecios, gbc);
+
+        // Fila 4: Stock
+        gbc.gridx = 0; gbc.gridy = 4; panel.add(new JLabel("Stock:"), gbc);
+        gbc.gridx = 1; stockField = new JTextField(15); panel.add(stockField, gbc);
+
+        // Fila 5: Categoría
+        gbc.gridx = 0; gbc.gridy = 5; panel.add(new JLabel("Categoría:"), gbc);
+        gbc.gridx = 1;
+        String[] categorias = {"Seleccionar...", "Celulares", "Accesorios", "Repuestos"};
         categoriaBox = new JComboBox<>(categorias);
         panel.add(categoriaBox, gbc);
 
-        // Modelo
-        gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Modelo:"), gbc);
-        gbc.gridx = 1; modeloField = new JTextField(15); panel.add(modeloField, gbc);
+        // Fila 6: Marca
+        gbc.gridx = 0; gbc.gridy = 6; panel.add(new JLabel("Marca:"), gbc);
+        gbc.gridx = 1;
+        String[] marcas = {"Seleccionar...", "Motorola", "Samsung", "Apple", "Xiaomi"};
+        marcaBox = new JComboBox<>(marcas);
+        panel.add(marcaBox, gbc);
 
-        // Stock
-        gbc.gridx = 0; gbc.gridy = 3; panel.add(new JLabel("Stock Inicial:"), gbc);
-        gbc.gridx = 1; stockField = new JTextField(15); panel.add(stockField, gbc);
+        // Fila 7: Imagen
+        gbc.gridx = 0; gbc.gridy = 7; panel.add(new JLabel("Imagen:"), gbc);
+        gbc.gridx = 1;
+        JPanel panelImagen = new JPanel(new BorderLayout(5, 0));
+        rutaImagenField = new JTextField();
+        rutaImagenField.setEditable(false);
+        btnSeleccionarImagen = new JButton("Buscar...");
+        panelImagen.add(rutaImagenField, BorderLayout.CENTER);
+        panelImagen.add(btnSeleccionarImagen, BorderLayout.EAST);
+        panel.add(panelImagen, gbc);
 
-        // Precio
-        gbc.gridx = 0; gbc.gridy = 4; panel.add(new JLabel("Precio:"), gbc);
-        gbc.gridx = 1; precioField = new JTextField(15); panel.add(precioField, gbc);
-
-        // Botón
-        gbc.gridx = 1; gbc.gridy = 5;
-        gbc.insets = new Insets(20, 10, 10, 10);
+        // Fila 8: Botón
+        gbc.gridy = 8;
+        gbc.gridx = 1;
+        gbc.insets = new Insets(15, 10, 10, 10);
         btnGuardarProducto = new JButton("Guardar Producto");
         panel.add(btnGuardarProducto, gbc);
 
         add(panel);
     }
 
-    // Getters para el controlador
-    public JTextField getCodigoField() { return codigoField; }
-    public JComboBox<String> getCategoriaBox() { return categoriaBox; }
-    public JTextField getModeloField() { return modeloField; }
-    public JTextField getStockField() { return stockField; }
+    // --- GETTERS ---
+    public JTextField getIdProductoField() { return idProductoField; }
+    public JTextField getNombreField() { return nombreField; }
+    public JTextArea getDescripcionArea() { return descripcionArea; }
     public JTextField getPrecioField() { return precioField; }
+    public JTextField getDescuentoField() { return descuentoField; }
+    public JTextField getStockField() { return stockField; }
+    public JComboBox<String> getCategoriaBox() { return categoriaBox; }
+    public JComboBox<String> getMarcaBox() { return marcaBox; }
+
+    // Getters de la imagen
+    public JTextField getRutaImagenField() { return rutaImagenField; }
+    public JButton getBtnSeleccionarImagen() { return btnSeleccionarImagen; }
+
     public JButton getBtnGuardarProducto() { return btnGuardarProducto; }
 }
