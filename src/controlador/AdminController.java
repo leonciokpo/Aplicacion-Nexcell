@@ -39,11 +39,10 @@ public class AdminController {
         RegistroProductoUI ventanaRegistro = new RegistroProductoUI(this.vistaPrincipal);
 
         ventanaRegistro.getBtnGuardarProducto().addActionListener(e -> {
-            String idProducto = ventanaRegistro.getIdProductoField().getText();
             String nombre = ventanaRegistro.getNombreField().getText();
 
-            if (idProducto.isEmpty() || nombre.isEmpty()) {
-                JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, completá al menos el ID del Producto y el Nombre.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+            if (nombre.isEmpty()) {
+                JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, completá al menos el Nombre del Producto.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -61,16 +60,16 @@ public class AdminController {
             return;
         }
 
-        // Reutilizamos el formulario de alta, pero lo adaptamos para edición
         RegistroProductoUI ventanaModificacion = new RegistroProductoUI(this.vistaPrincipal);
         ventanaModificacion.setTitle("Modificar Producto Existente");
         ventanaModificacion.getBtnGuardarProducto().setText("Actualizar Datos");
 
-        // Acá, a futuro, extraerías los datos de la BD usando el ID de la fila seleccionada
-        // Por ahora, simulamos la precarga con el ID de la tabla
+        // Extraemos el ID y el Nombre de la tabla
         String idSeleccionado = vistaPrincipal.getTablaProductos().getValueAt(fila, 0).toString();
-        ventanaModificacion.getIdProductoField().setText(idSeleccionado);
-        ventanaModificacion.getIdProductoField().setEditable(false); // La PK no se modifica
+        String nombreActual = vistaPrincipal.getTablaProductos().getValueAt(fila, 1).toString();
+
+        // Precargamos el nombre visualmente
+        ventanaModificacion.getNombreField().setText(nombreActual);
 
         ventanaModificacion.getBtnGuardarProducto().addActionListener(e -> {
             JOptionPane.showMessageDialog(ventanaModificacion, "El producto " + idSeleccionado + " fue actualizado correctamente.", "Actualización Exitosa", JOptionPane.INFORMATION_MESSAGE);
@@ -91,11 +90,10 @@ public class AdminController {
         String accion = activar ? "Reactivar (Dar de Alta)" : "Dar de Baja (Inactivar)";
 
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-            "¿Estás seguro que querés " + accion.toLowerCase() + " el producto " + idSeleccionado + "?",
-            accion, JOptionPane.YES_NO_OPTION);
+                "¿Estás seguro que querés " + accion.toLowerCase() + " el producto " + idSeleccionado + "?",
+                accion, JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
-            // Acá ejecutarías el UPDATE en la BD: UPDATE Productos SET estado = activar WHERE id_producto = idSeleccionado
             String nuevoEstado = activar ? "Activo" : "Inactivo";
             JOptionPane.showMessageDialog(vistaPrincipal, "El estado del producto se actualizó a: " + nuevoEstado, "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
         }
@@ -125,7 +123,7 @@ public class AdminController {
 
         String userSeleccionado = vistaPrincipal.getTablaUsuarios().getValueAt(fila, 0).toString();
         ventanaModificacion.getUsernameField().setText(userSeleccionado);
-        ventanaModificacion.getUsernameField().setEditable(false); // El username suele ser intocable
+        ventanaModificacion.getUsernameField().setEditable(false);
 
         ventanaModificacion.getBtnGuardarUsuario().addActionListener(e -> {
             JOptionPane.showMessageDialog(ventanaModificacion, "Usuario actualizado correctamente.", "Actualización Exitosa", JOptionPane.INFORMATION_MESSAGE);
@@ -146,8 +144,8 @@ public class AdminController {
         String accion = activar ? "Reactivar" : "Inactivar";
 
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-            "¿Estás seguro que querés " + accion.toLowerCase() + " al usuario " + userSeleccionado + "?",
-            "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION);
+                "¿Estás seguro que querés " + accion.toLowerCase() + " al usuario " + userSeleccionado + "?",
+                "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             JOptionPane.showMessageDialog(vistaPrincipal, "Estado del usuario actualizado a " + (activar ? "Activo" : "Inactivo") + ".", "Éxito", JOptionPane.INFORMATION_MESSAGE);
@@ -158,8 +156,8 @@ public class AdminController {
 
     private void cerrarSesion() {
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-            "¿Estás seguro que querés salir del panel de administración?", "Cerrar Sesión",
-            JOptionPane.YES_NO_OPTION);
+                "¿Estás seguro que querés salir del panel de administración?", "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             vistaPrincipal.dispose();
@@ -189,7 +187,7 @@ public class AdminController {
     private void reporteStock() {
         String[] columnas = {"Código", "Producto", "Stock", "Precio", "Estado"};
         Object[][] datos = {
-            {"CEL001", "Motorola Edge 60", 15, "$850.000", "Normal"}
+                {"CEL001", "Motorola Edge 60", 15, "$850.000", "Normal"}
         };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
@@ -197,7 +195,7 @@ public class AdminController {
     private void reporteProductos() {
         String[] columnas = {"Código", "Producto", "Categoría", "Precio"};
         Object[][] datos = {
-            {"CEL001", "Motorola Edge 60", "Celulares", "$850.000"}
+                {"CEL001", "Motorola Edge 60", "Celulares", "$850.000"}
         };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
@@ -205,7 +203,7 @@ public class AdminController {
     private void reporteUsuarios() {
         String[] columnas = {"Usuario", "Rol", "Estado"};
         Object[][] datos = {
-            {"admin", "Administrador", "Activo"}
+                {"admin", "Administrador", "Activo"}
         };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
@@ -213,7 +211,7 @@ public class AdminController {
     private void reporteMovimientos() {
         String[] columnas = {"Fecha", "Producto", "Movimiento", "Cantidad", "Usuario"};
         Object[][] datos = {
-            {"28/08/2026", "Motorola Edge 60", "Entrada", "+10", "admin"}
+                {"28/08/2026", "Motorola Edge 60", "Entrada", "+10", "admin"}
         };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
