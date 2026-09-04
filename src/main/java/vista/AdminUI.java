@@ -72,6 +72,11 @@ public class AdminUI extends JFrame {
         btnBajaProducto = new JButton("Baja Lógica");
         btnAltaProducto = new JButton("Reactivar");
 
+        // OCULTAR BOTONES POR DEFECTO
+        btnModificarProducto.setVisible(false);
+        btnBajaProducto.setVisible(false);
+        btnAltaProducto.setVisible(false);
+
         panelAcciones.add(btnAbrirFormularioProducto);
         panelAcciones.add(btnModificarProducto);
         panelAcciones.add(btnBajaProducto);

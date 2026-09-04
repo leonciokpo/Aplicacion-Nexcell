@@ -21,6 +21,20 @@ public class AdminController {
         this.vistaPrincipal.getBtnBajaProducto().addActionListener(e -> cambiarEstadoProducto(false));
         this.vistaPrincipal.getBtnAltaProducto().addActionListener(e -> cambiarEstadoProducto(true));
 
+        // Escuchadores para la tabla de productos
+        this.vistaPrincipal.getTablaProductos().getSelectionModel().addListSelectionListener(e -> {
+            // e.getValueIsAdjusting() evita que el evento se dispare dos veces por un solo clic
+            if (!e.getValueIsAdjusting()) {
+                // Verificamos si hay al menos una fila seleccionada (-1 significa ninguna)
+                boolean haySeleccion = this.vistaPrincipal.getTablaProductos().getSelectedRow() != -1;
+
+                // Mostramos u ocultamos los botones según si hay algo seleccionado
+                this.vistaPrincipal.getBtnModificarProducto().setVisible(haySeleccion);
+                this.vistaPrincipal.getBtnBajaProducto().setVisible(haySeleccion);
+                this.vistaPrincipal.getBtnAltaProducto().setVisible(haySeleccion);
+            }
+        });
+
         // Escuchadores de Usuarios
         this.vistaPrincipal.getBtnAbrirFormularioUsuario().addActionListener(e -> abrirFormularioUsuario());
         this.vistaPrincipal.getBtnModificarUsuario().addActionListener(e -> modificarUsuario());
