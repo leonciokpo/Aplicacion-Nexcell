@@ -28,5 +28,35 @@ public class Celular {
         this.stock = stock;
     }
 
-    // Usá Alt + Insert (o clic derecho -> Generate) para crear los Getters y Setters
+    public Long getId() {
+        return id;
+    }
+
+    public String getMarca() {
+        return marca;
+    }
+
+    public String getModelo() {
+        return modelo;
+    }
+
+    public int getStock() {
+        return stock;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setMarca(String marca) {
+        this.marca = marca;
+    }
+
+    public void setModelo(String modelo) {
+        this.modelo = modelo;
+    }
+
+    public void setStock(int stock) {
+        this.stock = stock;
+    }
 }
