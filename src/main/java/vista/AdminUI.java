@@ -92,7 +92,14 @@ public class AdminUI extends JFrame {
             {"ACC-002", "Funda Silicona", "Accesorios", "30", "$15.000", "Inactivo"}
         };
 
-        DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas);
+        // Creamos el modelo sobrescribiendo el metodo isCellEditable
+        DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Al devolver false, bloqueamos la edición de todas las celdas
+                return false;
+            }
+        };
         tablaProductos = new JTable(modeloTabla);
         JScrollPane scrollTabla = new JScrollPane(tablaProductos);
 
@@ -121,6 +128,11 @@ public class AdminUI extends JFrame {
         btnBajaUsuario = new JButton("Baja Lógica");
         btnAltaUsuario = new JButton("Reactivar");
 
+        // OCULTAR BOTONES POR DEFECTO
+        btnModificarUsuario.setVisible(false);
+        btnBajaUsuario.setVisible(false);
+        btnAltaUsuario.setVisible(false);
+
         panelAcciones.add(btnAbrirFormularioUsuario);
         panelAcciones.add(btnModificarUsuario);
         panelAcciones.add(btnBajaUsuario);
@@ -135,7 +147,14 @@ public class AdminUI extends JFrame {
             {"gerente_suc", "Gerente", "Activo"}
         };
 
-        DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas);
+        // Creamos el modelo sobrescribiendo el metodo isCellEditable
+        DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Al devolver false, bloqueamos la edición de todas las celdas
+                return false;
+            }
+        };
         tablaUsuarios = new JTable(modeloTabla);
         JScrollPane scrollTabla = new JScrollPane(tablaUsuarios);
 
@@ -160,7 +179,13 @@ public class AdminUI extends JFrame {
         panelSuperior.add(btnGenerarReporte);
         panelSuperior.add(btnLimpiarReporte);
 
-        tablaReportes = new JTable(new DefaultTableModel());
+        // Sobrescribimos el metodo directamente en la JTable para que sea permanente
+        tablaReportes = new JTable(new DefaultTableModel()) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Bloquea la edición en toda la tabla
+            }
+        };
         JScrollPane scrollTabla = new JScrollPane(tablaReportes);
 
         panel.add(panelSuperior, BorderLayout.NORTH);

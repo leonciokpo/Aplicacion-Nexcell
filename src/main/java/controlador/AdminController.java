@@ -23,15 +23,27 @@ public class AdminController {
 
         // Escuchadores para la tabla de productos
         this.vistaPrincipal.getTablaProductos().getSelectionModel().addListSelectionListener(e -> {
-            // e.getValueIsAdjusting() evita que el evento se dispare dos veces por un solo clic
             if (!e.getValueIsAdjusting()) {
-                // Verificamos si hay al menos una fila seleccionada (-1 significa ninguna)
-                boolean haySeleccion = this.vistaPrincipal.getTablaProductos().getSelectedRow() != -1;
+                int filaSeleccionada = this.vistaPrincipal.getTablaProductos().getSelectedRow();
+                boolean haySeleccion = filaSeleccionada != -1;
 
-                // Mostramos u ocultamos los botones según si hay algo seleccionado
                 this.vistaPrincipal.getBtnModificarProducto().setVisible(haySeleccion);
-                this.vistaPrincipal.getBtnBajaProducto().setVisible(haySeleccion);
-                this.vistaPrincipal.getBtnAltaProducto().setVisible(haySeleccion);
+
+                if (haySeleccion) {
+                    // Leemos la columna 5, que corresponde al "Estado"
+                    String estadoActual = this.vistaPrincipal.getTablaProductos().getValueAt(filaSeleccionada, 5).toString();
+
+                    if (estadoActual.equalsIgnoreCase("Activo")) {
+                        this.vistaPrincipal.getBtnBajaProducto().setVisible(true);
+                        this.vistaPrincipal.getBtnAltaProducto().setVisible(false);
+                    } else {
+                        this.vistaPrincipal.getBtnBajaProducto().setVisible(false);
+                        this.vistaPrincipal.getBtnAltaProducto().setVisible(true);
+                    }
+                } else {
+                    this.vistaPrincipal.getBtnBajaProducto().setVisible(false);
+                    this.vistaPrincipal.getBtnAltaProducto().setVisible(false);
+                }
             }
         });
 
@@ -40,6 +52,32 @@ public class AdminController {
         this.vistaPrincipal.getBtnModificarUsuario().addActionListener(e -> modificarUsuario());
         this.vistaPrincipal.getBtnBajaUsuario().addActionListener(e -> cambiarEstadoUsuario(false));
         this.vistaPrincipal.getBtnAltaUsuario().addActionListener(e -> cambiarEstadoUsuario(true));
+
+        // Escuchadores para la tabla de usuarios
+        this.vistaPrincipal.getTablaUsuarios().getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int filaSeleccionada = this.vistaPrincipal.getTablaUsuarios().getSelectedRow();
+                boolean haySeleccion = filaSeleccionada != -1;
+
+                this.vistaPrincipal.getBtnModificarUsuario().setVisible(haySeleccion);
+
+                if (haySeleccion) {
+                    // Leemos la columna 2, que corresponde al "Estado" en Usuarios
+                    String estadoActual = this.vistaPrincipal.getTablaUsuarios().getValueAt(filaSeleccionada, 2).toString();
+
+                    if (estadoActual.equalsIgnoreCase("Activo")) {
+                        this.vistaPrincipal.getBtnBajaUsuario().setVisible(true);
+                        this.vistaPrincipal.getBtnAltaUsuario().setVisible(false);
+                    } else {
+                        this.vistaPrincipal.getBtnBajaUsuario().setVisible(false);
+                        this.vistaPrincipal.getBtnAltaUsuario().setVisible(true);
+                    }
+                } else {
+                    this.vistaPrincipal.getBtnBajaUsuario().setVisible(false);
+                    this.vistaPrincipal.getBtnAltaUsuario().setVisible(false);
+                }
+            }
+        });
 
         // Escuchadores de Reportes y Sesión
         this.vistaPrincipal.getBtnGenerarReporte().addActionListener(e -> generarReporte());
@@ -109,6 +147,14 @@ public class AdminController {
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             String nuevoEstado = activar ? "Activo" : "Inactivo";
+
+            // Actualizamos la tabla visualmente para reflejar el cambio (Fila seleccionada, Columna 5)
+            vistaPrincipal.getTablaProductos().setValueAt(nuevoEstado, fila, 5);
+
+            // Refrescamos la selección para que el escuchador detecte el nuevo estado y cambie el botón
+            vistaPrincipal.getTablaProductos().clearSelection();
+            vistaPrincipal.getTablaProductos().setRowSelectionInterval(fila, fila);
+
             JOptionPane.showMessageDialog(vistaPrincipal, "El estado del producto se actualizó a: " + nuevoEstado, "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
         }
     }
@@ -162,7 +208,16 @@ public class AdminController {
                 "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
-            JOptionPane.showMessageDialog(vistaPrincipal, "Estado del usuario actualizado a " + (activar ? "Activo" : "Inactivo") + ".", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            String nuevoEstado = activar ? "Activo" : "Inactivo";
+
+            // Actualizamos la tabla visualmente (Fila seleccionada, Columna 2)
+            vistaPrincipal.getTablaUsuarios().setValueAt(nuevoEstado, fila, 2);
+
+            // Refrescamos la selección para que el escuchador detecte el nuevo estado
+            vistaPrincipal.getTablaUsuarios().clearSelection();
+            vistaPrincipal.getTablaUsuarios().setRowSelectionInterval(fila, fila);
+
+            JOptionPane.showMessageDialog(vistaPrincipal, "Estado del usuario actualizado a " + nuevoEstado + ".", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

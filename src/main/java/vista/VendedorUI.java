@@ -11,6 +11,9 @@ public class VendedorUI extends JFrame {
     private JButton btnBuscarCliente;
     private JTable tablaClientes;
     private JButton btnAbrirFormularioCliente;
+    private JButton btnModificarCliente; // (Opcional si ya lo tienes planeado)
+    private JButton btnBajaCliente;
+    private JButton btnAltaCliente;
 
     // Componentes de Productos
     private JTextField buscarProductoField;
@@ -53,7 +56,7 @@ public class VendedorUI extends JFrame {
         add(panelInferior, BorderLayout.SOUTH);
     }
 
-    // --- MÉTODO DEL PANEL CLIENTES QUE FALTABA ---
+    // --- METODO DEL PANEL CLIENTES QUE FALTABA ---
     private JPanel crearPanelClientes() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -68,20 +71,37 @@ public class VendedorUI extends JFrame {
         panelBusqueda.add(buscarClienteField);
         panelBusqueda.add(btnBuscarCliente);
 
-        // Botón Nuevo
-        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        // Botones de Acciones (Nuevo, Baja Lógica, Reactivar)
+        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         btnAbrirFormularioCliente = new JButton("Nuevo Cliente");
+        btnBajaCliente = new JButton("Baja Lógica");
+        btnAltaCliente = new JButton("Reactivar");
+
+        // OCULTAR BOTONES POR DEFECTO
+        btnBajaCliente.setVisible(false);
+        btnAltaCliente.setVisible(false);
+
         panelAcciones.add(btnAbrirFormularioCliente);
+        panelAcciones.add(btnBajaCliente);
+        panelAcciones.add(btnAltaCliente);
 
         panelSuperior.add(panelBusqueda, BorderLayout.WEST);
         panelSuperior.add(panelAcciones, BorderLayout.EAST);
 
-        String[] columnas = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+        // Agregamos la columna "Estado" para que funcione la lógica de baja lógica
+        String[] columnas = {"DNI", "Nombre", "Apellido", "Teléfono", "Email", "Estado"};
         Object[][] datosEjemplo = {
-            {"35123456", "Juan", "Pérez", "3794123456", "juanperez@email.com"}
+                {"35123456", "Juan", "Pérez", "3794123456", "juanperez@email.com", "Activo"}
         };
 
-        DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas);
+        // Creamos el modelo bloqueando la edición de celdas
+        DefaultTableModel modeloTabla = new DefaultTableModel(datosEjemplo, columnas) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
         tablaClientes = new JTable(modeloTabla);
         JScrollPane scrollTabla = new JScrollPane(tablaClientes);
 
@@ -91,7 +111,7 @@ public class VendedorUI extends JFrame {
         return panel;
     }
 
-    // --- MÉTODO DEL PANEL PRODUCTOS QUE FALTABA ---
+    // --- METODO DEL PANEL PRODUCTOS QUE FALTABA ---
     private JPanel crearPanelProductos() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -158,6 +178,8 @@ public class VendedorUI extends JFrame {
     public JButton getBtnBuscarCliente() { return btnBuscarCliente; }
     public JTable getTablaClientes() { return tablaClientes; }
     public JButton getBtnAbrirFormularioCliente() { return btnAbrirFormularioCliente; }
+    public JButton getBtnBajaCliente() { return btnBajaCliente; }
+    public JButton getBtnAltaCliente() { return btnAltaCliente; }
 
     // --- GETTERS DE PRODUCTOS ---
     public JTextField getBuscarProductoField() { return buscarProductoField; }
