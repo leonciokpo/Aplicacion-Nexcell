@@ -11,9 +11,11 @@ import javax.swing.table.DefaultTableModel;
 public class AdminController {
 
     private AdminUI vistaPrincipal;
+    private jakarta.persistence.EntityManager em;
 
-    public AdminController(AdminUI vistaPrincipal) {
+    public AdminController(AdminUI vistaPrincipal, jakarta.persistence.EntityManager em) {
         this.vistaPrincipal = vistaPrincipal;
+        this.em = em;
 
         // Escuchadores de Productos
         this.vistaPrincipal.getBtnAbrirFormularioProducto().addActionListener(e -> abrirFormularioProducto());
@@ -30,7 +32,6 @@ public class AdminController {
                 this.vistaPrincipal.getBtnModificarProducto().setVisible(haySeleccion);
 
                 if (haySeleccion) {
-                    // Leemos la columna 5, que corresponde al "Estado"
                     String estadoActual = this.vistaPrincipal.getTablaProductos().getValueAt(filaSeleccionada, 5).toString();
 
                     if (estadoActual.equalsIgnoreCase("Activo")) {
@@ -62,7 +63,6 @@ public class AdminController {
                 this.vistaPrincipal.getBtnModificarUsuario().setVisible(haySeleccion);
 
                 if (haySeleccion) {
-                    // Leemos la columna 2, que corresponde al "Estado" en Usuarios
                     String estadoActual = this.vistaPrincipal.getTablaUsuarios().getValueAt(filaSeleccionada, 2).toString();
 
                     if (estadoActual.equalsIgnoreCase("Activo")) {
@@ -84,8 +84,6 @@ public class AdminController {
         this.vistaPrincipal.getBtnLimpiarReporte().addActionListener(e -> limpiarReporte());
         this.vistaPrincipal.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
     }
-
-    // --- LÓGICA DE PRODUCTOS ---
 
     private void abrirFormularioProducto() {
         RegistroProductoUI ventanaRegistro = new RegistroProductoUI(this.vistaPrincipal);
@@ -116,11 +114,9 @@ public class AdminController {
         ventanaModificacion.setTitle("Modificar Producto Existente");
         ventanaModificacion.getBtnGuardarProducto().setText("Actualizar Datos");
 
-        // Extraemos el ID y el Nombre de la tabla
         String idSeleccionado = vistaPrincipal.getTablaProductos().getValueAt(fila, 0).toString();
         String nombreActual = vistaPrincipal.getTablaProductos().getValueAt(fila, 1).toString();
 
-        // Precargamos el nombre visualmente
         ventanaModificacion.getNombreField().setText(nombreActual);
 
         ventanaModificacion.getBtnGuardarProducto().addActionListener(e -> {
@@ -142,31 +138,53 @@ public class AdminController {
         String accion = activar ? "Reactivar (Dar de Alta)" : "Dar de Baja (Inactivar)";
 
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-                "¿Estás seguro que querés " + accion.toLowerCase() + " el producto " + idSeleccionado + "?",
-                accion, JOptionPane.YES_NO_OPTION);
+            "¿Estás seguro que querés " + accion.toLowerCase() + " el producto " + idSeleccionado + "?",
+            accion, JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             String nuevoEstado = activar ? "Activo" : "Inactivo";
-
-            // Actualizamos la tabla visualmente para reflejar el cambio (Fila seleccionada, Columna 5)
             vistaPrincipal.getTablaProductos().setValueAt(nuevoEstado, fila, 5);
-
-            // Refrescamos la selección para que el escuchador detecte el nuevo estado y cambie el botón
             vistaPrincipal.getTablaProductos().clearSelection();
             vistaPrincipal.getTablaProductos().setRowSelectionInterval(fila, fila);
-
             JOptionPane.showMessageDialog(vistaPrincipal, "El estado del producto se actualizó a: " + nuevoEstado, "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    // --- LÓGICA DE USUARIOS ---
-
     private void abrirFormularioUsuario() {
         RegistroUsuarioUI ventanaRegistro = new RegistroUsuarioUI(this.vistaPrincipal);
+
         ventanaRegistro.getBtnGuardarUsuario().addActionListener(e -> {
-            JOptionPane.showMessageDialog(ventanaRegistro, "Usuario registrado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            ventanaRegistro.dispose();
+            String username = ventanaRegistro.getUsernameField().getText();
+            String password = new String(ventanaRegistro.getPasswordField().getPassword());
+            String rol = ventanaRegistro.getRolBox().getSelectedItem().toString();
+
+            // 1. Validación básica
+            if (username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, completá todos los campos.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // 2. Creación del objeto según el rol seleccionado
+            modelo.Usuario nuevoUsuario;
+            if (rol.equals("Gerente")) {
+                nuevoUsuario = new modelo.Gerente(username, password);
+            } else {
+                nuevoUsuario = new modelo.Vendedor(username, password);
+            }
+
+            // 3. Guardado en la base de datos
+            try {
+                repositorio.UsuarioRepository repo = new repositorio.UsuarioRepository(em);
+                repo.guardar(nuevoUsuario);
+
+                JOptionPane.showMessageDialog(ventanaRegistro, "Usuario '" + username + "' registrado exitosamente en MySQL.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                ventanaRegistro.dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(ventanaRegistro, "Error al guardar en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
         });
+
         ventanaRegistro.setVisible(true);
     }
 
@@ -204,34 +222,27 @@ public class AdminController {
         String accion = activar ? "Reactivar" : "Inactivar";
 
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-                "¿Estás seguro que querés " + accion.toLowerCase() + " al usuario " + userSeleccionado + "?",
-                "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION);
+            "¿Estás seguro que querés " + accion.toLowerCase() + " al usuario " + userSeleccionado + "?",
+            "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             String nuevoEstado = activar ? "Activo" : "Inactivo";
-
-            // Actualizamos la tabla visualmente (Fila seleccionada, Columna 2)
             vistaPrincipal.getTablaUsuarios().setValueAt(nuevoEstado, fila, 2);
-
-            // Refrescamos la selección para que el escuchador detecte el nuevo estado
             vistaPrincipal.getTablaUsuarios().clearSelection();
             vistaPrincipal.getTablaUsuarios().setRowSelectionInterval(fila, fila);
-
             JOptionPane.showMessageDialog(vistaPrincipal, "Estado del usuario actualizado a " + nuevoEstado + ".", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    // --- GENERAL Y REPORTES ---
-
     private void cerrarSesion() {
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-                "¿Estás seguro que querés salir del panel de administración?", "Cerrar Sesión",
-                JOptionPane.YES_NO_OPTION);
+            "¿Estás seguro que querés salir del panel de administración?", "Cerrar Sesión",
+            JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             vistaPrincipal.dispose();
             LoginUI ventanaLogin = new LoginUI();
-            new LoginController(ventanaLogin);
+            new LoginController(ventanaLogin, em);
             ventanaLogin.setVisible(true);
         }
     }
@@ -255,33 +266,25 @@ public class AdminController {
 
     private void reporteStock() {
         String[] columnas = {"Código", "Producto", "Stock", "Precio", "Estado"};
-        Object[][] datos = {
-                {"CEL001", "Motorola Edge 60", 15, "$850.000", "Normal"}
-        };
+        Object[][] datos = { {"CEL001", "Motorola Edge 60", 15, "$850.000", "Normal"} };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
 
     private void reporteProductos() {
         String[] columnas = {"Código", "Producto", "Categoría", "Precio"};
-        Object[][] datos = {
-                {"CEL001", "Motorola Edge 60", "Celulares", "$850.000"}
-        };
+        Object[][] datos = { {"CEL001", "Motorola Edge 60", "Celulares", "$850.000"} };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
 
     private void reporteUsuarios() {
         String[] columnas = {"Usuario", "Rol", "Estado"};
-        Object[][] datos = {
-                {"admin", "Administrador", "Activo"}
-        };
+        Object[][] datos = { {"admin", "Administrador", "Activo"} };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
 
     private void reporteMovimientos() {
         String[] columnas = {"Fecha", "Producto", "Movimiento", "Cantidad", "Usuario"};
-        Object[][] datos = {
-                {"28/08/2026", "Motorola Edge 60", "Entrada", "+10", "admin"}
-        };
+        Object[][] datos = { {"28/08/2026", "Motorola Edge 60", "Entrada", "+10", "admin"} };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
 }

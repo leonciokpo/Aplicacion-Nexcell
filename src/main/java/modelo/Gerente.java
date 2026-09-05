@@ -1,23 +1,24 @@
 package modelo;
 
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import vista.GerenteUI;
-import controlador.GerenteController; // Esta es la línea que faltaba
+import controlador.GerenteController;
 
+@Entity
+@DiscriminatorValue("GERENTE") // Así va a aparecer en la columna "rol" de MySQL
 public class Gerente extends Usuario {
+
+    public Gerente() {} // Constructor vacío para JPA
 
     public Gerente(String username, String password) {
         super(username, password);
     }
 
     @Override
-    public void mostrarInterfaz() {
-        // 1. Creamos la vista
+    public void mostrarInterfaz(jakarta.persistence.EntityManager em) {
         GerenteUI gerenteVista = new GerenteUI();
-
-        // 2. Le enchufamos el controlador
-        new GerenteController(gerenteVista);
-
-        // 3. Hacemos visible la ventana
+        new GerenteController(gerenteVista, em);
         gerenteVista.setVisible(true);
     }
 }

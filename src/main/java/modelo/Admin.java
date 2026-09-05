@@ -1,23 +1,24 @@
 package modelo;
 
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import vista.AdminUI;
-import controlador.AdminController; // Importamos el nuevo cerebro
+import controlador.AdminController;
 
+@Entity
+@DiscriminatorValue("ADMIN") // Valor para la columna "rol"
 public class Admin extends Usuario {
+
+    public Admin() {}
 
     public Admin(String username, String password) {
         super(username, password);
     }
 
     @Override
-    public void mostrarInterfaz() {
-        // 1. Creamos la vista
+    public void mostrarInterfaz(jakarta.persistence.EntityManager em) {
         AdminUI adminVista = new AdminUI();
-
-        // 2. Le enchufamos el controlador
-        AdminController controlador = new AdminController(adminVista);
-
-        // 3. Hacemos visible la ventana
+        new AdminController(adminVista, em);
         adminVista.setVisible(true);
     }
 }

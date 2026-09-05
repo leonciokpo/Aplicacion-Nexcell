@@ -2,7 +2,7 @@ package controlador;
 
 import vista.VendedorUI;
 import vista.RegistroClienteUI;
-import vista.RegistroVentaUI; // Importamos la nueva vista de ventas
+import vista.RegistroVentaUI;
 import vista.LoginUI;
 
 import javax.swing.*;
@@ -10,34 +10,24 @@ import javax.swing.*;
 public class VendedorController {
 
     private VendedorUI vistaPrincipal;
+    private jakarta.persistence.EntityManager em;
 
-    public VendedorController(VendedorUI vistaPrincipal) {
+    public VendedorController(VendedorUI vistaPrincipal, jakarta.persistence.EntityManager em) {
         this.vistaPrincipal = vistaPrincipal;
+        this.em = em;
 
-        // --- ESCUCHADORES DE LOS BOTONES PRINCIPALES ---
-
-        // Botón: Nuevo Cliente
         this.vistaPrincipal.getBtnAbrirFormularioCliente().addActionListener(e -> abrirFormularioRegistro());
-
-        // Botón: Cerrar Sesión
         this.vistaPrincipal.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
-
-        // Botón: Nueva Venta
         this.vistaPrincipal.getBtnAbrirFormularioVenta().addActionListener(e -> abrirFormularioVenta());
-
-        // --- ESCUCHADORES DE CLIENTES ---
-        this.vistaPrincipal.getBtnAbrirFormularioCliente().addActionListener(e -> abrirFormularioRegistro());
         this.vistaPrincipal.getBtnBajaCliente().addActionListener(e -> cambiarEstadoCliente(false));
         this.vistaPrincipal.getBtnAltaCliente().addActionListener(e -> cambiarEstadoCliente(true));
 
-        // Escuchador para detectar selección en la tabla de clientes
         this.vistaPrincipal.getTablaClientes().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int filaSeleccionada = this.vistaPrincipal.getTablaClientes().getSelectedRow();
                 boolean haySeleccion = filaSeleccionada != -1;
 
                 if (haySeleccion) {
-                    // Leemos la columna 5, que corresponde al "Estado" del cliente
                     String estadoActual = this.vistaPrincipal.getTablaClientes().getValueAt(filaSeleccionada, 5).toString();
 
                     if (estadoActual.equalsIgnoreCase("Activo")) {
@@ -55,20 +45,14 @@ public class VendedorController {
         });
     }
 
-    // --- MÉTODOS DE LÓGICA Y NAVEGACIÓN ---
-
     private void abrirFormularioVenta() {
-        // Instanciamos la ventana emergente de ventas
         RegistroVentaUI ventanaVenta = new RegistroVentaUI(this.vistaPrincipal);
 
-        // Le damos comportamiento al botón de confirmar
         ventanaVenta.getBtnConfirmarVenta().addActionListener(e -> {
-            // Leemos los datos de la interfaz
             String dniCliente = ventanaVenta.getDniClienteField().getText();
             int productoSeleccionado = ventanaVenta.getProductoBox().getSelectedIndex();
             String cantidad = ventanaVenta.getCantidadField().getText();
 
-            // Validación estricta de campos vacíos
             if (dniCliente.isEmpty() || productoSeleccionado == 0 || cantidad.isEmpty()) {
                 JOptionPane.showMessageDialog(ventanaVenta,
                     "Debes ingresar el DNI del cliente, seleccionar un producto y especificar la cantidad.",
@@ -76,17 +60,13 @@ public class VendedorController {
                 return;
             }
 
-            // A futuro: Lógica para verificar que el DNI exista en la base de datos
-
-            // Confirmación exitosa
             JOptionPane.showMessageDialog(ventanaVenta,
                 "Venta registrada exitosamente para el DNI:\n" + dniCliente,
                 "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
 
-            ventanaVenta.dispose(); // Cerramos la ventana de registro de venta
+            ventanaVenta.dispose();
         });
 
-        // Mostramos la ventana
         ventanaVenta.setVisible(true);
     }
 
@@ -116,12 +96,9 @@ public class VendedorController {
             JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
-            // Destruimos la ventana actual
             vistaPrincipal.dispose();
-
-            // Volvemos a levantar el Login aplicando MVC
             LoginUI ventanaLogin = new LoginUI();
-            new LoginController(ventanaLogin);
+            new LoginController(ventanaLogin, em);
             ventanaLogin.setVisible(true);
         }
     }
@@ -137,19 +114,14 @@ public class VendedorController {
         String accion = activar ? "Reactivar" : "Dar de Baja (Inactivar)";
 
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
-                "¿Estás seguro que querés " + accion.toLowerCase() + " al cliente con DNI " + dniSeleccionado + "?",
-                accion, JOptionPane.YES_NO_OPTION);
+            "¿Estás seguro que querés " + accion.toLowerCase() + " al cliente con DNI " + dniSeleccionado + "?",
+            accion, JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
             String nuevoEstado = activar ? "Activo" : "Inactivo";
-
-            // Actualizamos la tabla visualmente en la columna de Estado (Columna 5)
             vistaPrincipal.getTablaClientes().setValueAt(nuevoEstado, fila, 5);
-
-            // Refrescamos la selección para que el escuchador actualice el botón correspondiente
             vistaPrincipal.getTablaClientes().clearSelection();
             vistaPrincipal.getTablaClientes().setRowSelectionInterval(fila, fila);
-
             JOptionPane.showMessageDialog(vistaPrincipal, "El estado del cliente se actualizó a: " + nuevoEstado, "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
         }
     }

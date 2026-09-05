@@ -1,19 +1,20 @@
 package controlador;
 
 import modelo.Usuario;
-import modelo.Admin;
-import modelo.Gerente;
-import modelo.Vendedor;
 import vista.LoginUI;
-
+import jakarta.persistence.EntityManager;
 import javax.swing.*;
+import java.util.List;
 
 public class LoginController {
 
     private LoginUI vista;
+    private EntityManager em; // Agregamos el gestor de la base de datos
 
-    public LoginController(LoginUI vista) {
+    // Actualizamos el constructor para recibir el EntityManager
+    public LoginController(LoginUI vista, EntityManager em) {
         this.vista = vista;
+        this.em = em;
 
         this.vista.getLoginButton().addActionListener(e -> autenticar());
     }
@@ -22,24 +23,34 @@ public class LoginController {
         String user = vista.getUserField().getText();
         String pass = new String(vista.getPassField().getPassword());
 
-        Usuario usuarioAutenticado = simularBaseDeDatos(user, pass);
+        Usuario usuarioAutenticado = consultarBaseDeDatos(user, pass);
 
         if (usuarioAutenticado != null) {
-            usuarioAutenticado.mostrarInterfaz();
-            vista.dispose(); // Cerramos el login
+            usuarioAutenticado.mostrarInterfaz(em);
+            vista.dispose();
         } else {
             JOptionPane.showMessageDialog(vista, "Credenciales incorrectas", "Error de Acceso", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private Usuario simularBaseDeDatos(String user, String pass) {
-        if (user.equals("admin") && pass.equals("123")) {
-            return new Admin(user, pass);
-        } else if (user.equals("gerente") && pass.equals("123")) {
-            return new Gerente(user, pass);
-        } else if (user.equals("vendedor") && pass.equals("123")) {
-            return new Vendedor(user, pass);
+    private Usuario consultarBaseDeDatos(String user, String pass) {
+        try {
+            // Hacemos una consulta real a la base de datos usando JPQL
+            List<Usuario> resultados = em.createQuery(
+                    "SELECT u FROM Usuario u WHERE u.username = :user AND u.password = :pass", Usuario.class)
+                .setParameter("user", user)
+                .setParameter("pass", pass)
+                .getResultList();
+
+            // Si la lista no está vacía, devolvemos el primer usuario encontrado
+            if (!resultados.isEmpty()) {
+                return resultados.get(0);
+            }
+        } catch (Exception e) {
+            System.out.println("Error al consultar la base de datos: " + e.getMessage());
+            e.printStackTrace();
         }
+
         return null;
     }
 }
