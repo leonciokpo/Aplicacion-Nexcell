@@ -4,16 +4,24 @@ import vista.AdminUI;
 import vista.RegistroProductoUI;
 import vista.RegistroUsuarioUI;
 import vista.LoginUI;
+import modelo.Admin;
+import modelo.Gerente;
+import modelo.Vendedor;
+import modelo.Usuario;
+import repositorio.UsuarioRepository;
+import jakarta.persistence.EntityManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.time.LocalDate;
+import java.time.DateTimeException;
 
 public class AdminController {
 
     private AdminUI vistaPrincipal;
-    private jakarta.persistence.EntityManager em;
+    private EntityManager em;
 
-    public AdminController(AdminUI vistaPrincipal, jakarta.persistence.EntityManager em) {
+    public AdminController(AdminUI vistaPrincipal, EntityManager em) {
         this.vistaPrincipal = vistaPrincipal;
         this.em = em;
 
@@ -152,35 +160,76 @@ public class AdminController {
 
     private void abrirFormularioUsuario() {
         RegistroUsuarioUI ventanaRegistro = new RegistroUsuarioUI(this.vistaPrincipal);
+        UsuarioRepository usuarioRepo = new UsuarioRepository(this.em);
 
         ventanaRegistro.getBtnGuardarUsuario().addActionListener(e -> {
-            String username = ventanaRegistro.getUsernameField().getText();
-            String password = new String(ventanaRegistro.getPasswordField().getPassword());
-            String rol = ventanaRegistro.getRolBox().getSelectedItem().toString();
+            // 1. Lectura de los campos de texto
+            String nombre = ventanaRegistro.getTxtNombre().getText().trim();
+            String apellido = ventanaRegistro.getTxtApellido().getText().trim();
+            String username = ventanaRegistro.getTxtUsername().getText().trim();
+            String password = new String(ventanaRegistro.getTxtPassword().getPassword());
+            String email = ventanaRegistro.getTxtEmail().getText().trim();
+            String dni = ventanaRegistro.getTxtDni().getText().trim();
+            String direccion = ventanaRegistro.getTxtDireccion().getText().trim();
 
-            // 1. Validación básica
-            if (username.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, completá todos los campos.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+            String rol = ventanaRegistro.getCbPerfil().getSelectedItem().toString();
+
+            // 2. Validación estricta de campos vacíos
+            if (username.isEmpty() || password.isEmpty() || nombre.isEmpty() || apellido.isEmpty()) {
+                JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, complete al menos Nombre, Apellido, Username y Contraseña.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // 2. Creación del objeto según el rol seleccionado
-            modelo.Usuario nuevoUsuario;
-            if (rol.equals("Gerente")) {
-                nuevoUsuario = new modelo.Gerente(username, password);
-            } else {
-                nuevoUsuario = new modelo.Vendedor(username, password);
+            // 3. Capturar y parsear la fecha de los ComboBox
+            int dia = (int) ventanaRegistro.getCbDia().getSelectedItem();
+            int mes = Integer.parseInt(ventanaRegistro.getCbMes().getSelectedItem().toString());
+            int anio = (int) ventanaRegistro.getCbAnio().getSelectedItem();
+
+            LocalDate fechaNac = null;
+            try {
+                fechaNac = LocalDate.of(anio, mes, dia);
+            } catch (DateTimeException ex) {
+                JOptionPane.showMessageDialog(ventanaRegistro, "La fecha seleccionada no existe en el calendario.", "Fecha Inválida", JOptionPane.ERROR_MESSAGE);
+                return;
             }
 
-            // 3. Guardado en la base de datos
+            // 4. Instanciación basada en la jerarquía JPA
+            Usuario nuevoUsuario;
+            if (rol.equals("Administrador") || rol.equals("Admin")) {
+                nuevoUsuario = new Admin(username, password);
+            } else if (rol.equals("Gerente")) {
+                nuevoUsuario = new Gerente(username, password);
+            } else {
+                nuevoUsuario = new Vendedor(username, password);
+            }
+
+            // 5. Mapeo de atributos heredados de Persona
+            nuevoUsuario.setNombre(nombre);
+            nuevoUsuario.setApellido(apellido);
+            nuevoUsuario.setEmail(email);
+            nuevoUsuario.setDni(dni);
+            nuevoUsuario.setDireccion(direccion);
+            nuevoUsuario.setFechaNacimiento(fechaNac);
+
+            // 6. Guardado Transaccional Protegido (Una única vez y limpio)
             try {
-                repositorio.UsuarioRepository repo = new repositorio.UsuarioRepository(em);
-                repo.guardar(nuevoUsuario);
+                // Si hay una transacción fantasma previa, la limpiamos
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+
+                em.getTransaction().begin();
+                usuarioRepo.guardar(nuevoUsuario);
+                em.getTransaction().commit();
 
                 JOptionPane.showMessageDialog(ventanaRegistro, "Usuario '" + username + "' registrado exitosamente en MySQL.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                 ventanaRegistro.dispose();
+
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(ventanaRegistro, "Error al guardar en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+                JOptionPane.showMessageDialog(ventanaRegistro, "Error al guardar en la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }
         });
@@ -200,8 +249,9 @@ public class AdminController {
         ventanaModificacion.getBtnGuardarUsuario().setText("Actualizar Usuario");
 
         String userSeleccionado = vistaPrincipal.getTablaUsuarios().getValueAt(fila, 0).toString();
-        ventanaModificacion.getUsernameField().setText(userSeleccionado);
-        ventanaModificacion.getUsernameField().setEditable(false);
+        // Asegúrate de usar los nuevos nombres de getters
+        ventanaModificacion.getTxtUsername().setText(userSeleccionado);
+        ventanaModificacion.getTxtUsername().setEditable(false);
 
         ventanaModificacion.getBtnGuardarUsuario().addActionListener(e -> {
             JOptionPane.showMessageDialog(ventanaModificacion, "Usuario actualizado correctamente.", "Actualización Exitosa", JOptionPane.INFORMATION_MESSAGE);

@@ -13,9 +13,7 @@ public class UsuarioRepository {
     }
 
     public void guardar(Usuario usuario) {
-        em.getTransaction().begin();
         em.persist(usuario);
-        em.getTransaction().commit();
     }
 
     public List<Usuario> listarTodos() {
