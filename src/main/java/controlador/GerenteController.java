@@ -18,6 +18,9 @@ public class GerenteController {
         this.vistaPrincipal.getBtnGenerarReporte().addActionListener(e -> generarReporteVentas());
         this.vistaPrincipal.getBtnLimpiarReporte().addActionListener(e -> limpiarReporte());
         this.vistaPrincipal.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
+
+        // Escuchador de botón (Rendimiento)
+        this.vistaPrincipal.getBtnCalcularRendimiento().addActionListener(e -> calcularRendimiento());
     }
 
     private void generarReporteVentas() {
@@ -26,6 +29,7 @@ public class GerenteController {
         String[] columnas = {"ID Venta", "Fecha", "DNI Cliente", "Vendedor", "Producto", "Total"};
         Object[][] datos;
 
+        // Simulamos consultas a la base de datos según el filtro
         if (filtroSeleccionado.equals("Ventas del Día")) {
             datos = new Object[][]{
                 {"V-1023", "31/08/2026", "35123456", "vendedor1", "Motorola Edge 60", "$850.000"}
@@ -61,5 +65,32 @@ public class GerenteController {
             new LoginController(ventanaLogin, em);
             ventanaLogin.setVisible(true);
         }
+    }
+
+    private void calcularRendimiento() {
+        String periodo = vistaPrincipal.getComboFiltroRendimiento().getSelectedItem().toString();
+        String[] columnas = {"Usuario Vendedor", "Cant. Ventas", "Total Facturado", "Comisión Estimada (5%)"};
+        Object[][] datos;
+
+        // Simulamos la agrupación de ventas por vendedor según el período
+        if (periodo.equals("Este Mes")) {
+            datos = new Object[][]{
+                    {"vendedor1", "45", "$3.500.000", "$175.000"},
+                    {"vendedor2", "38", "$2.800.000", "$140.000"}
+            };
+        } else if (periodo.equals("Mes Anterior")) {
+            datos = new Object[][]{
+                    {"vendedor1", "60", "$4.200.000", "$210.000"},
+                    {"vendedor2", "55", "$3.900.000", "$195.000"}
+            };
+        } else {
+            // Año Actual
+            datos = new Object[][]{
+                    {"vendedor1", "320", "$25.500.000", "$1.275.000"},
+                    {"vendedor2", "290", "$21.800.000", "$1.090.000"}
+            };
+        }
+
+        vistaPrincipal.getTablaRendimiento().setModel(new DefaultTableModel(datos, columnas));
     }
 }
