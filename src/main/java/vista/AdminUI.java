@@ -202,6 +202,8 @@ public class AdminUI extends JFrame {
     public JButton getBtnAltaProducto() { return btnAltaProducto; }
 
     // --- GETTERS DE USUARIOS ---
+    public JTextField getTxtBuscarUsuario() { return buscarUsuarioField; }
+    public JButton getBtnBuscarUsuario() { return btnBuscarUsuario; }
     public JTable getTablaUsuarios() { return tablaUsuarios; }
     public JButton getBtnAbrirFormularioUsuario() { return btnAbrirFormularioUsuario; }
     public JButton getBtnModificarUsuario() { return btnModificarUsuario; }

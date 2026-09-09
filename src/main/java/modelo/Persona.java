@@ -1,6 +1,7 @@
 package modelo;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.MappedSuperclass;
 import java.time.LocalDate;
 
@@ -11,13 +12,19 @@ public abstract class Persona {
     private String apellido;
     private String dni;
     private String email;
-    private String direccion;
+    @Column(name = "fecha_registro", updatable = false)
+    private java.time.LocalDate fechaRegistro;
+
+    @Embedded
+    private Direccion direccion; // Reemplazamos el String por el objeto compuesto
 
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
 
-    // Constructor vacío
-    public Persona() {}
+    public Persona() {
+        // Cada vez que se instancie un objeto, se guarda la fecha exacta automáticamente
+        this.fechaRegistro = java.time.LocalDate.now();
+    }
 
     // --- GETTERS Y SETTERS ---
     public String getNombre() { return nombre; }
@@ -32,9 +39,12 @@ public abstract class Persona {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getDireccion() { return direccion; }
-    public void setDireccion(String direccion) { this.direccion = direccion; }
+    public Direccion getDireccion() { return direccion; }
+    public void setDireccion(Direccion direccion) { this.direccion = direccion; }
 
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
     public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
+
+    public java.time.LocalDate getFechaRegistro() { return fechaRegistro; }
 }
+

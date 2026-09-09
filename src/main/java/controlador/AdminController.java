@@ -13,8 +13,12 @@ import jakarta.persistence.EntityManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.time.LocalDate;
 import java.time.DateTimeException;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class AdminController {
 
@@ -31,17 +35,14 @@ public class AdminController {
         this.vistaPrincipal.getBtnBajaProducto().addActionListener(e -> cambiarEstadoProducto(false));
         this.vistaPrincipal.getBtnAltaProducto().addActionListener(e -> cambiarEstadoProducto(true));
 
-        // Escuchadores para la tabla de productos
         this.vistaPrincipal.getTablaProductos().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int filaSeleccionada = this.vistaPrincipal.getTablaProductos().getSelectedRow();
                 boolean haySeleccion = filaSeleccionada != -1;
-
                 this.vistaPrincipal.getBtnModificarProducto().setVisible(haySeleccion);
 
                 if (haySeleccion) {
                     String estadoActual = this.vistaPrincipal.getTablaProductos().getValueAt(filaSeleccionada, 5).toString();
-
                     if (estadoActual.equalsIgnoreCase("Activo")) {
                         this.vistaPrincipal.getBtnBajaProducto().setVisible(true);
                         this.vistaPrincipal.getBtnAltaProducto().setVisible(false);
@@ -62,17 +63,14 @@ public class AdminController {
         this.vistaPrincipal.getBtnBajaUsuario().addActionListener(e -> cambiarEstadoUsuario(false));
         this.vistaPrincipal.getBtnAltaUsuario().addActionListener(e -> cambiarEstadoUsuario(true));
 
-        // Escuchadores para la tabla de usuarios
         this.vistaPrincipal.getTablaUsuarios().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int filaSeleccionada = this.vistaPrincipal.getTablaUsuarios().getSelectedRow();
                 boolean haySeleccion = filaSeleccionada != -1;
-
                 this.vistaPrincipal.getBtnModificarUsuario().setVisible(haySeleccion);
 
                 if (haySeleccion) {
                     String estadoActual = this.vistaPrincipal.getTablaUsuarios().getValueAt(filaSeleccionada, 2).toString();
-
                     if (estadoActual.equalsIgnoreCase("Activo")) {
                         this.vistaPrincipal.getBtnBajaUsuario().setVisible(true);
                         this.vistaPrincipal.getBtnAltaUsuario().setVisible(false);
@@ -91,32 +89,38 @@ public class AdminController {
         this.vistaPrincipal.getBtnGenerarReporte().addActionListener(e -> generarReporte());
         this.vistaPrincipal.getBtnLimpiarReporte().addActionListener(e -> limpiarReporte());
         this.vistaPrincipal.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
+
+        // Escuchadores de Búsqueda de Usuarios (CORREGIDO: Ahora están adentro del constructor)
+        this.vistaPrincipal.getBtnBuscarUsuario().addActionListener(e -> filtrarTablaUsuarios());
+        this.vistaPrincipal.getTxtBuscarUsuario().addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                filtrarTablaUsuarios();
+            }
+        });
+
+        cargarTablaUsuarios();
     }
+
+    // === GESTIÓN DE PRODUCTOS ===
 
     private void abrirFormularioProducto() {
         RegistroProductoUI ventanaRegistro = new RegistroProductoUI(this.vistaPrincipal);
-
         ventanaRegistro.getBtnGuardarProducto().addActionListener(e -> {
             String nombre = ventanaRegistro.getNombreField().getText();
-
             if (nombre.isEmpty()) {
                 JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, completá al menos el Nombre del Producto.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
             JOptionPane.showMessageDialog(ventanaRegistro, "Producto '" + nombre + "' registrado con éxito.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             ventanaRegistro.dispose();
         });
-
         ventanaRegistro.setVisible(true);
     }
 
     private void modificarProducto() {
         int fila = vistaPrincipal.getTablaProductos().getSelectedRow();
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(vistaPrincipal, "Seleccioná un producto de la tabla para modificar.", "Atención", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        if (fila == -1) return;
 
         RegistroProductoUI ventanaModificacion = new RegistroProductoUI(this.vistaPrincipal);
         ventanaModificacion.setTitle("Modificar Producto Existente");
@@ -124,23 +128,18 @@ public class AdminController {
 
         String idSeleccionado = vistaPrincipal.getTablaProductos().getValueAt(fila, 0).toString();
         String nombreActual = vistaPrincipal.getTablaProductos().getValueAt(fila, 1).toString();
-
         ventanaModificacion.getNombreField().setText(nombreActual);
 
         ventanaModificacion.getBtnGuardarProducto().addActionListener(e -> {
             JOptionPane.showMessageDialog(ventanaModificacion, "El producto " + idSeleccionado + " fue actualizado correctamente.", "Actualización Exitosa", JOptionPane.INFORMATION_MESSAGE);
             ventanaModificacion.dispose();
         });
-
         ventanaModificacion.setVisible(true);
     }
 
     private void cambiarEstadoProducto(boolean activar) {
         int fila = vistaPrincipal.getTablaProductos().getSelectedRow();
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(vistaPrincipal, "Seleccioná un producto de la tabla.", "Atención", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        if (fila == -1) return;
 
         String idSeleccionado = vistaPrincipal.getTablaProductos().getValueAt(fila, 0).toString();
         String accion = activar ? "Reactivar (Dar de Alta)" : "Dar de Baja (Inactivar)";
@@ -158,129 +157,268 @@ public class AdminController {
         }
     }
 
+    // === GESTIÓN DE USUARIOS CON VALIDACIONES INLINE ===
+
     private void abrirFormularioUsuario() {
         RegistroUsuarioUI ventanaRegistro = new RegistroUsuarioUI(this.vistaPrincipal);
         UsuarioRepository usuarioRepo = new UsuarioRepository(this.em);
 
         ventanaRegistro.getBtnGuardarUsuario().addActionListener(e -> {
-            // 1. Lectura de los campos de texto
+            ventanaRegistro.limpiarErrores();
+            boolean hayErrores = false;
+
             String nombre = ventanaRegistro.getTxtNombre().getText().trim();
             String apellido = ventanaRegistro.getTxtApellido().getText().trim();
-            String username = ventanaRegistro.getTxtUsername().getText().trim();
-            String password = new String(ventanaRegistro.getTxtPassword().getPassword());
-            String email = ventanaRegistro.getTxtEmail().getText().trim();
             String dni = ventanaRegistro.getTxtDni().getText().trim();
-            String direccion = ventanaRegistro.getTxtDireccion().getText().trim();
-
+            String email = ventanaRegistro.getTxtEmail().getText().trim();
+            String username = ventanaRegistro.getTxtUsername().getText().trim();
+            String password = new String(ventanaRegistro.getTxtPassword().getPassword()).trim();
             String rol = ventanaRegistro.getCbPerfil().getSelectedItem().toString();
 
-            // 2. Validación estricta de campos vacíos
-            if (username.isEmpty() || password.isEmpty() || nombre.isEmpty() || apellido.isEmpty()) {
-                JOptionPane.showMessageDialog(ventanaRegistro, "Por favor, complete al menos Nombre, Apellido, Username y Contraseña.", "Campos incompletos", JOptionPane.WARNING_MESSAGE);
-                return;
+            String calle = ventanaRegistro.getTxtCalle().getText().trim();
+            String altura = ventanaRegistro.getTxtAltura().getText().trim();
+            String ciudad = ventanaRegistro.getTxtCiudad().getText().trim();
+            String provincia = ventanaRegistro.getCbProvincia().getSelectedItem().toString();
+
+            if (nombre.isEmpty() || !nombre.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+                ventanaRegistro.getLblErrorNombre().setText("Requerido. Solo letras permitidas.");
+                hayErrores = true;
+            }
+            if (apellido.isEmpty() || !apellido.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+                ventanaRegistro.getLblErrorApellido().setText("Requerido. Solo letras permitidas.");
+                hayErrores = true;
+            }
+            if (!dni.matches("\\d{7,8}")) {
+                ventanaRegistro.getLblErrorDni().setText("Debe contener 7 u 8 números exactos.");
+                hayErrores = true;
+            } else if (usuarioRepo.existeDni(dni)) {
+                ventanaRegistro.getLblErrorDni().setText("Este DNI ya se encuentra registrado.");
+                hayErrores = true;
             }
 
-            // 3. Capturar y parsear la fecha de los ComboBox
             int dia = (int) ventanaRegistro.getCbDia().getSelectedItem();
             int mes = Integer.parseInt(ventanaRegistro.getCbMes().getSelectedItem().toString());
             int anio = (int) ventanaRegistro.getCbAnio().getSelectedItem();
-
             LocalDate fechaNac = null;
             try {
                 fechaNac = LocalDate.of(anio, mes, dia);
             } catch (DateTimeException ex) {
-                JOptionPane.showMessageDialog(ventanaRegistro, "La fecha seleccionada no existe en el calendario.", "Fecha Inválida", JOptionPane.ERROR_MESSAGE);
-                return;
+                ventanaRegistro.getLblErrorFecha().setText("La fecha seleccionada no existe en el calendario.");
+                hayErrores = true;
             }
 
-            // 4. Instanciación basada en la jerarquía JPA
+            if (calle.isEmpty()) {
+                ventanaRegistro.getLblErrorCalle().setText("La calle es obligatoria.");
+                hayErrores = true;
+            }
+            if (!altura.matches("\\d+")) {
+                ventanaRegistro.getLblErrorAltura().setText("Debe ser un valor numérico exacto.");
+                hayErrores = true;
+            }
+            if (ciudad.isEmpty()) {
+                ventanaRegistro.getLblErrorCiudad().setText("La ciudad es obligatoria.");
+                hayErrores = true;
+            }
+
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                ventanaRegistro.getLblErrorEmail().setText("Formato inválido (ej: correo@mail.com).");
+                hayErrores = true;
+            }
+            if (username.isEmpty() || username.contains(" ") || username.length() < 4) {
+                ventanaRegistro.getLblErrorUsername().setText("Mínimo 4 caracteres y sin espacios.");
+                hayErrores = true;
+            }
+            if (password.isEmpty()) {
+                ventanaRegistro.getLblErrorPassword().setText("La contraseña es obligatoria.");
+                hayErrores = true;
+            }
+
+            if (hayErrores) return;
+
+            modelo.Direccion nuevaDireccion = new modelo.Direccion(calle, altura, ciudad, provincia);
             Usuario nuevoUsuario;
-            if (rol.equals("Administrador") || rol.equals("Admin")) {
-                nuevoUsuario = new Admin(username, password);
-            } else if (rol.equals("Gerente")) {
-                nuevoUsuario = new Gerente(username, password);
-            } else {
-                nuevoUsuario = new Vendedor(username, password);
-            }
+            if (rol.equals("Gerente")) nuevoUsuario = new Gerente(username, password);
+            else if (rol.equals("Vendedor")) nuevoUsuario = new Vendedor(username, password);
+            else nuevoUsuario = new Admin(username, password);
 
-            // 5. Mapeo de atributos heredados de Persona
             nuevoUsuario.setNombre(nombre);
             nuevoUsuario.setApellido(apellido);
-            nuevoUsuario.setEmail(email);
             nuevoUsuario.setDni(dni);
-            nuevoUsuario.setDireccion(direccion);
+            nuevoUsuario.setEmail(email);
+            nuevoUsuario.setDireccion(nuevaDireccion);
             nuevoUsuario.setFechaNacimiento(fechaNac);
 
-            // 6. Guardado Transaccional Protegido (Una única vez y limpio)
             try {
-                // Si hay una transacción fantasma previa, la limpiamos
-                if (em.getTransaction().isActive()) {
-                    em.getTransaction().rollback();
-                }
-
+                if (em.getTransaction().isActive()) em.getTransaction().rollback();
                 em.getTransaction().begin();
                 usuarioRepo.guardar(nuevoUsuario);
                 em.getTransaction().commit();
 
-                JOptionPane.showMessageDialog(ventanaRegistro, "Usuario '" + username + "' registrado exitosamente en MySQL.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(ventanaRegistro, "Usuario '" + username + "' registrado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                 ventanaRegistro.dispose();
-
+                cargarTablaUsuarios();
             } catch (Exception ex) {
-                if (em.getTransaction().isActive()) {
-                    em.getTransaction().rollback();
-                }
-                JOptionPane.showMessageDialog(ventanaRegistro, "Error al guardar en la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
+                if (em.getTransaction().isActive()) em.getTransaction().rollback();
+                ventanaRegistro.getLblErrorUsername().setText("Este nombre de usuario ya está en uso.");
             }
         });
-
         ventanaRegistro.setVisible(true);
     }
 
     private void modificarUsuario() {
         int fila = vistaPrincipal.getTablaUsuarios().getSelectedRow();
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(vistaPrincipal, "Seleccioná un usuario de la tabla para modificar.", "Atención", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        if (fila == -1) return;
+
+        String userSeleccionado = vistaPrincipal.getTablaUsuarios().getValueAt(fila, 0).toString();
+        UsuarioRepository repo = new UsuarioRepository(em);
+        modelo.Usuario usuario = repo.buscarPorUsername(userSeleccionado);
+
+        if (usuario == null) return;
 
         RegistroUsuarioUI ventanaModificacion = new RegistroUsuarioUI(this.vistaPrincipal);
         ventanaModificacion.setTitle("Modificar Usuario");
-        ventanaModificacion.getBtnGuardarUsuario().setText("Actualizar Usuario");
+        ventanaModificacion.getBtnGuardarUsuario().setText("Actualizar Datos");
 
-        String userSeleccionado = vistaPrincipal.getTablaUsuarios().getValueAt(fila, 0).toString();
-        // Asegúrate de usar los nuevos nombres de getters
-        ventanaModificacion.getTxtUsername().setText(userSeleccionado);
+        ventanaModificacion.getTxtUsername().setText(usuario.getUsername());
         ventanaModificacion.getTxtUsername().setEditable(false);
+        ventanaModificacion.getTxtPassword().setText(usuario.getPassword());
+        ventanaModificacion.getTxtNombre().setText(usuario.getNombre());
+        ventanaModificacion.getTxtApellido().setText(usuario.getApellido());
+        ventanaModificacion.getTxtDni().setText(usuario.getDni());
+        ventanaModificacion.getTxtEmail().setText(usuario.getEmail());
+
+        if (usuario.getDireccion() != null) {
+            ventanaModificacion.getTxtCalle().setText(usuario.getDireccion().getCalle());
+            ventanaModificacion.getTxtAltura().setText(usuario.getDireccion().getAltura());
+            ventanaModificacion.getTxtCiudad().setText(usuario.getDireccion().getCiudad());
+            ventanaModificacion.getCbProvincia().setSelectedItem(usuario.getDireccion().getProvincia());
+        }
 
         ventanaModificacion.getBtnGuardarUsuario().addActionListener(e -> {
-            JOptionPane.showMessageDialog(ventanaModificacion, "Usuario actualizado correctamente.", "Actualización Exitosa", JOptionPane.INFORMATION_MESSAGE);
-            ventanaModificacion.dispose();
-        });
+            ventanaModificacion.limpiarErrores();
+            boolean hayErrores = false;
 
+            String nombre = ventanaModificacion.getTxtNombre().getText().trim();
+            String apellido = ventanaModificacion.getTxtApellido().getText().trim();
+            String dni = ventanaModificacion.getTxtDni().getText().trim();
+            String email = ventanaModificacion.getTxtEmail().getText().trim();
+            String calle = ventanaModificacion.getTxtCalle().getText().trim();
+            String altura = ventanaModificacion.getTxtAltura().getText().trim();
+            String ciudad = ventanaModificacion.getTxtCiudad().getText().trim();
+
+            if (nombre.isEmpty() || !nombre.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+                ventanaModificacion.getLblErrorNombre().setText("Requerido. Solo letras permitidas.");
+                hayErrores = true;
+            }
+            if (apellido.isEmpty() || !apellido.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+")) {
+                ventanaModificacion.getLblErrorApellido().setText("Requerido. Solo letras permitidas.");
+                hayErrores = true;
+            }
+            if (!dni.matches("\\d{7,8}")) {
+                ventanaModificacion.getLblErrorDni().setText("Debe contener 7 u 8 números exactos.");
+                hayErrores = true;
+            } else if (!dni.equals(usuario.getDni()) && repo.existeDni(dni)) {
+                ventanaModificacion.getLblErrorDni().setText("Este DNI ya pertenece a otro usuario.");
+                hayErrores = true;
+            }
+            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                ventanaModificacion.getLblErrorEmail().setText("Formato inválido (ej: correo@mail.com).");
+                hayErrores = true;
+            }
+            if (calle.isEmpty()) {
+                ventanaModificacion.getLblErrorCalle().setText("La calle es obligatoria.");
+                hayErrores = true;
+            }
+            if (!altura.matches("\\d+")) {
+                ventanaModificacion.getLblErrorAltura().setText("Debe ser numérico.");
+                hayErrores = true;
+            }
+            if (ciudad.isEmpty()) {
+                ventanaModificacion.getLblErrorCiudad().setText("La ciudad es obligatoria.");
+                hayErrores = true;
+            }
+
+            if (hayErrores) return;
+
+            usuario.setNombre(nombre);
+            usuario.setApellido(apellido);
+            usuario.setDni(dni);
+            usuario.setEmail(email);
+
+            if (usuario.getDireccion() == null) usuario.setDireccion(new modelo.Direccion());
+            usuario.getDireccion().setCalle(calle);
+            usuario.getDireccion().setAltura(altura);
+            usuario.getDireccion().setCiudad(ciudad);
+            usuario.getDireccion().setProvincia(ventanaModificacion.getCbProvincia().getSelectedItem().toString());
+
+            try {
+                repo.actualizar(usuario);
+                JOptionPane.showMessageDialog(ventanaModificacion, "Datos actualizados correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                ventanaModificacion.dispose();
+                cargarTablaUsuarios();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(ventanaModificacion, "Error al actualizar la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
         ventanaModificacion.setVisible(true);
+    }
+
+    private void cargarTablaUsuarios() {
+        repositorio.UsuarioRepository repo = new repositorio.UsuarioRepository(this.em);
+        List<modelo.Usuario> usuarios = repo.listarTodos();
+
+        DefaultTableModel modelo = (DefaultTableModel) vistaPrincipal.getTablaUsuarios().getModel();
+        modelo.setRowCount(0);
+
+        for (modelo.Usuario u : usuarios) {
+            String estadoVisual = (u.getEstado() != null && u.getEstado()) ? "Activo" : "Inactivo";
+            String rol = u.getClass().getSimpleName();
+            modelo.addRow(new Object[]{u.getUsername(), rol, estadoVisual});
+        }
     }
 
     private void cambiarEstadoUsuario(boolean activar) {
         int fila = vistaPrincipal.getTablaUsuarios().getSelectedRow();
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(vistaPrincipal, "Seleccioná un usuario de la tabla.", "Atención", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        if (fila == -1) return;
 
         String userSeleccionado = vistaPrincipal.getTablaUsuarios().getValueAt(fila, 0).toString();
         String accion = activar ? "Reactivar" : "Inactivar";
 
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
             "¿Estás seguro que querés " + accion.toLowerCase() + " al usuario " + userSeleccionado + "?",
-            "Confirmar Cambio de Estado", JOptionPane.YES_NO_OPTION);
+            "Confirmar Cambio", JOptionPane.YES_NO_OPTION);
 
         if (confirmacion == JOptionPane.YES_OPTION) {
-            String nuevoEstado = activar ? "Activo" : "Inactivo";
-            vistaPrincipal.getTablaUsuarios().setValueAt(nuevoEstado, fila, 2);
-            vistaPrincipal.getTablaUsuarios().clearSelection();
-            vistaPrincipal.getTablaUsuarios().setRowSelectionInterval(fila, fila);
-            JOptionPane.showMessageDialog(vistaPrincipal, "Estado del usuario actualizado a " + nuevoEstado + ".", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            repositorio.UsuarioRepository repo = new repositorio.UsuarioRepository(em);
+            modelo.Usuario usuario = repo.buscarPorUsername(userSeleccionado);
+
+            if (usuario != null) {
+                usuario.setEstado(activar);
+                repo.actualizar(usuario);
+                cargarTablaUsuarios();
+                JOptionPane.showMessageDialog(vistaPrincipal, "Estado actualizado con éxito.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
+
+    private void filtrarTablaUsuarios() {
+        String textoBusqueda = vistaPrincipal.getTxtBuscarUsuario().getText().trim();
+        repositorio.UsuarioRepository repo = new repositorio.UsuarioRepository(this.em);
+        List<modelo.Usuario> usuarios;
+
+        if (textoBusqueda.isEmpty()) {
+            usuarios = repo.listarTodos();
+        } else {
+            usuarios = repo.buscarPorTexto(textoBusqueda);
+        }
+
+        DefaultTableModel modelo = (DefaultTableModel) vistaPrincipal.getTablaUsuarios().getModel();
+        modelo.setRowCount(0);
+
+        for (modelo.Usuario u : usuarios) {
+            String estadoVisual = (u.getEstado() != null && u.getEstado()) ? "Activo" : "Inactivo";
+            String rol = u.getClass().getSimpleName();
+            modelo.addRow(new Object[]{u.getUsername(), rol, estadoVisual});
         }
     }
 
@@ -288,7 +426,6 @@ public class AdminController {
         int confirmacion = JOptionPane.showConfirmDialog(vistaPrincipal,
             "¿Estás seguro que querés salir del panel de administración?", "Cerrar Sesión",
             JOptionPane.YES_NO_OPTION);
-
         if (confirmacion == JOptionPane.YES_OPTION) {
             vistaPrincipal.dispose();
             LoginUI ventanaLogin = new LoginUI();
@@ -297,21 +434,109 @@ public class AdminController {
         }
     }
 
+    // === REPORTES CON MENÚS DESPLEGABLES ===
+
     private void generarReporte() {
         String reporte = vistaPrincipal.getComboReportes().getSelectedItem().toString();
-        if (reporte.equals("Stock de productos")) {
-            reporteStock();
-        } else if (reporte.equals("Productos registrados")) {
-            reporteProductos();
-        } else if (reporte.equals("Usuarios del sistema")) {
-            reporteUsuarios();
-        } else {
-            reporteMovimientos();
-        }
+        if (reporte.equals("Stock de productos")) reporteStock();
+        else if (reporte.equals("Productos registrados")) reporteProductos();
+        else if (reporte.equals("Usuarios del sistema")) reporteUsuarios();
+        else reporteMovimientos();
     }
 
     private void limpiarReporte() {
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel());
+    }
+
+    private Integer[] generarRango(int inicio, int fin) {
+        Integer[] rango = new Integer[fin - inicio + 1];
+        for (int i = 0; i < rango.length; i++) rango[i] = inicio + i;
+        return rango;
+    }
+
+    private void reporteUsuarios() {
+        Integer[] dias = generarRango(1, 31);
+        String[] meses = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"};
+        int anioActual = LocalDate.now().getYear();
+        Integer[] anios = generarRango(anioActual - 5, anioActual);
+
+        JComboBox<Integer> cbDiaDesde = new JComboBox<>(dias);
+        JComboBox<String> cbMesDesde = new JComboBox<>(meses);
+        JComboBox<Integer> cbAnioDesde = new JComboBox<>(anios);
+        cbAnioDesde.setSelectedItem(anioActual);
+
+        JComboBox<Integer> cbDiaHasta = new JComboBox<>(dias);
+        JComboBox<String> cbMesHasta = new JComboBox<>(meses);
+        JComboBox<Integer> cbAnioHasta = new JComboBox<>(anios);
+        cbAnioHasta.setSelectedItem(anioActual);
+
+        JPanel panelFechas = new JPanel(new GridLayout(2, 1, 5, 5));
+
+        JPanel panelDesde = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelDesde.add(new JLabel("Desde:"));
+        panelDesde.add(cbDiaDesde); panelDesde.add(new JLabel("/"));
+        panelDesde.add(cbMesDesde); panelDesde.add(new JLabel("/"));
+        panelDesde.add(cbAnioDesde);
+
+        JPanel panelHasta = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelHasta.add(new JLabel("Hasta: "));
+        panelHasta.add(cbDiaHasta); panelHasta.add(new JLabel("/"));
+        panelHasta.add(cbMesHasta); panelHasta.add(new JLabel("/"));
+        panelHasta.add(cbAnioHasta);
+
+        panelFechas.add(panelDesde);
+        panelFechas.add(panelHasta);
+
+        int result = JOptionPane.showConfirmDialog(vistaPrincipal, panelFechas,
+            "Filtro Obligatorio de Fechas (Máx 6 meses)", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION) {
+            try {
+                int diaD = (int) cbDiaDesde.getSelectedItem();
+                int mesD = Integer.parseInt(cbMesDesde.getSelectedItem().toString());
+                int anioD = (int) cbAnioDesde.getSelectedItem();
+
+                int diaH = (int) cbDiaHasta.getSelectedItem();
+                int mesH = Integer.parseInt(cbMesHasta.getSelectedItem().toString());
+                int anioH = (int) cbAnioHasta.getSelectedItem();
+
+                LocalDate desde = LocalDate.of(anioD, mesD, diaD);
+                LocalDate hasta = LocalDate.of(anioH, mesH, diaH);
+
+                if (desde.isAfter(hasta)) {
+                    JOptionPane.showMessageDialog(vistaPrincipal, "La fecha 'Desde' no puede ser posterior a 'Hasta'.", "Rango Inválido", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                long mesesDiferencia = ChronoUnit.MONTHS.between(desde, hasta);
+                if (mesesDiferencia > 6) {
+                    JOptionPane.showMessageDialog(vistaPrincipal, "Para optimizar la base de datos, el rango máximo permitido es de 6 meses.", "Rango Excesivo", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                UsuarioRepository repo = new UsuarioRepository(em);
+                List<Usuario> usuarios = repo.reporteUsuariosPorFecha(desde, hasta);
+
+                String[] columnas = {"Usuario", "Rol", "Estado", "Fecha Registro"};
+                DefaultTableModel modelo = new DefaultTableModel(null, columnas);
+
+                for (Usuario u : usuarios) {
+                    String estadoVisual = (u.getEstado() != null && u.getEstado()) ? "Activo" : "Inactivo";
+                    String rol = u.getClass().getSimpleName();
+                    String fecha = (u.getFechaRegistro() != null) ? u.getFechaRegistro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "N/A";
+                    modelo.addRow(new Object[]{u.getUsername(), rol, estadoVisual, fecha});
+                }
+
+                vistaPrincipal.getTablaReportes().setModel(modelo);
+
+                if (usuarios.isEmpty()) {
+                    JOptionPane.showMessageDialog(vistaPrincipal, "No se encontraron usuarios en ese rango de fechas.", "Reporte Vacío", JOptionPane.INFORMATION_MESSAGE);
+                }
+
+            } catch (DateTimeException ex) {
+                JOptionPane.showMessageDialog(vistaPrincipal, "Combinación de fecha no válida (ej: 31 de febrero).", "Fecha Inexistente", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void reporteStock() {
@@ -323,12 +548,6 @@ public class AdminController {
     private void reporteProductos() {
         String[] columnas = {"Código", "Producto", "Categoría", "Precio"};
         Object[][] datos = { {"CEL001", "Motorola Edge 60", "Celulares", "$850.000"} };
-        vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
-    }
-
-    private void reporteUsuarios() {
-        String[] columnas = {"Usuario", "Rol", "Estado"};
-        Object[][] datos = { {"admin", "Administrador", "Activo"} };
         vistaPrincipal.getTablaReportes().setModel(new DefaultTableModel(datos, columnas));
     }
 
